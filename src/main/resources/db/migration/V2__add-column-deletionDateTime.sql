@@ -1,0 +1,1 @@
+alter table store add deletion_date_time DATETIME;

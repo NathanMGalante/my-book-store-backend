@@ -1,0 +1,22 @@
+CREATE TABLE IF NOT EXISTS store (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL,
+    slogan VARCHAR(240) NOT NULL,
+    banner LONGTEXT NULL,
+    creation_date_time DATETIME NOT NULL,
+    PRIMARY KEY(id)
+) ENGINE=InnoDB;
+
+
+CREATE TABLE IF NOT EXISTS user (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(50) NOT NULL UNIQUE,
+    password VARCHAR(60) NOT NULL,
+    photo LONGTEXT NULL,
+    role VARCHAR(20) NOT NULL DEFAULT 'GUEST',
+    store_id BIGINT NOT NULL,
+    creation_date_time DATETIME NOT NULL,
+    PRIMARY KEY(id),
+    FOREIGN KEY (store_id) REFERENCES store(id)
+) ENGINE=InnoDB;
