@@ -23,17 +23,25 @@ public class TokenService {
 	@Value("${api.security.token.issuer}")
 	private String issuer;
 	
-	public String generateToken(User user) {
+	private String generateToken(User user, LocalDateTime expiration) {
 		try {
 		    Algorithm algorithm = Algorithm.HMAC256(secret);
 		    return JWT.create().withIssuer(issuer)
 		    		.withSubject(user.getUsername())
 		    		.withClaim("authorities", user.getAuthoritiesAsStringList())
-		    		.withExpiresAt(expirationDate())
+		    		.withExpiresAt(expiration.toInstant(ZoneOffset.of("-03:00")))
 		    		.sign(algorithm);
 		} catch (JWTCreationException exception){
 		    throw new RuntimeException("Erro ao gerar token", exception);
 		}
+	}
+	
+	public String generateAccessToken(User user) {
+		return generateToken(user, LocalDateTime.now().plusMinutes(15));
+	}
+	
+	public String generateRefreshToken(User user) {
+		return generateToken(user, LocalDateTime.now().plusMonths(1));
 	}
 	
 	public String getSubjec(String token) {
@@ -48,9 +56,4 @@ public class TokenService {
 		    throw new RuntimeException("Token inválido", exception);
 		}
 	}
-
-	private Instant expirationDate() {
-		return LocalDateTime.now().plusMinutes(15).toInstant(ZoneOffset.of("-03:00"));
-	}
-	
 }

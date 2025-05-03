@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 import jakarta.validation.Valid;
 import nathan.mg.api.config.security.TokenService;
 import nathan.mg.api.user.User;
+import nathan.mg.api.user.UserRepository;
 
 @RestController
 @RequestMapping("/auth")
@@ -22,14 +23,33 @@ public class AuthController {
 	
 	@Autowired
 	private TokenService tokenService;
+	
+	@Autowired
+	private UserRepository userRepository;
 
 	@PostMapping("/login")
-	public ResponseEntity<?> login(@RequestBody @Valid LoginRequestDto data) {
+	public ResponseEntity<AuthResponseDto> login(@RequestBody @Valid LoginRequestDto data) {
 		var authToken = new UsernamePasswordAuthenticationToken(data.username(), data.password());
 		var auth = manager.authenticate(authToken);
-		var accessToken = tokenService.generateToken((User) auth.getPrincipal());
+		var user = auth.getPrincipal();
+
+		var accessToken = tokenService.generateAccessToken((User) user);
+		var refreshToken = tokenService.generateRefreshToken((User) user);
 		
-		return ResponseEntity.ok(new LoginResponseDto(accessToken));
+		return ResponseEntity.ok(new AuthResponseDto(accessToken, refreshToken));
+	}
+
+	@PostMapping("/refresh")
+	public ResponseEntity<AuthResponseDto> refresh(@RequestBody @Valid RefreshRequestDto data) {
+		var refreshToken = data.refreshToken();
+		System.out.println("refreshToken: " + refreshToken);
+		var subject = tokenService.getSubjec(refreshToken);
+		var user = userRepository.findByEmail(subject);
+
+		var newAccessToken = tokenService.generateAccessToken((User) user);
+		var newRefreshToken = tokenService.generateRefreshToken((User) user);
+
+		return ResponseEntity.ok(new AuthResponseDto(newAccessToken, newRefreshToken));
 	}
 	
 }
