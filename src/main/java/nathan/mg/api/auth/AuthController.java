@@ -11,8 +11,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.validation.Valid;
 import nathan.mg.api.config.security.TokenService;
+import nathan.mg.api.store.StoreResponseDto;
 import nathan.mg.api.user.User;
 import nathan.mg.api.user.UserRepository;
+import nathan.mg.api.user.UserResponseDto;
 
 @RestController
 @RequestMapping("/auth")
@@ -28,15 +30,18 @@ public class AuthController {
 	private UserRepository userRepository;
 
 	@PostMapping("/login")
-	public ResponseEntity<AuthResponseDto> login(@RequestBody @Valid LoginRequestDto data) {
+	public ResponseEntity<LoginResponseDto> login(@RequestBody @Valid LoginRequestDto data) {
 		var authToken = new UsernamePasswordAuthenticationToken(data.username(), data.password());
 		var auth = manager.authenticate(authToken);
-		var user = auth.getPrincipal();
+		var user = (User) auth.getPrincipal();
 
-		var accessToken = tokenService.generateAccessToken((User) user);
-		var refreshToken = tokenService.generateRefreshToken((User) user);
+		var accessToken = tokenService.generateAccessToken(user);
+		var refreshToken = tokenService.generateRefreshToken(user);
 		
-		return ResponseEntity.ok(new AuthResponseDto(accessToken, refreshToken));
+		var userDto = new UserResponseDto(user);
+		var storeDto = new StoreResponseDto(user.getStore());
+		
+		return ResponseEntity.ok(new LoginResponseDto(accessToken, refreshToken, userDto, storeDto));
 	}
 
 	@PostMapping("/refresh")

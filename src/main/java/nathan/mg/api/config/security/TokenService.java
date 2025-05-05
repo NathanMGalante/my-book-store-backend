@@ -1,6 +1,5 @@
 package nathan.mg.api.config.security;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 
