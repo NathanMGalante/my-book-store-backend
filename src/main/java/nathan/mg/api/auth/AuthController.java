@@ -42,8 +42,7 @@ public class AuthController {
 	@PostMapping("/refresh")
 	public ResponseEntity<AuthResponseDto> refresh(@RequestBody @Valid RefreshRequestDto data) {
 		var refreshToken = data.refreshToken();
-		System.out.println("refreshToken: " + refreshToken);
-		var subject = tokenService.getSubjec(refreshToken);
+		var subject = tokenService.getSubjecFromToken(refreshToken);
 		var user = userRepository.findByEmail(subject);
 
 		var newAccessToken = tokenService.generateAccessToken((User) user);

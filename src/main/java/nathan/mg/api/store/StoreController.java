@@ -21,7 +21,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import jakarta.validation.Valid;
 import nathan.mg.api.user.Role;
 import nathan.mg.api.user.User;
-import nathan.mg.api.user.UserDto;
+import nathan.mg.api.user.UserRequestDto;
 import nathan.mg.api.user.UserRepository;
 
 @RestController
@@ -39,7 +39,7 @@ public class StoreController {
 
 	@PostMapping
 	@Transactional
-	public ResponseEntity<StoreResponseDto> register(@RequestBody @Valid UserDto data, UriComponentsBuilder uriBuilder) {
+	public ResponseEntity<StoreResponseDto> register(@RequestBody @Valid UserRequestDto data, UriComponentsBuilder uriBuilder) {
         Store store = new Store(data.store());
         
         User admin = new User(data.name(), data.email(), passwordEncoder.encode(data.password()), data.photo(), store, Role.ROLE_ADMIN);

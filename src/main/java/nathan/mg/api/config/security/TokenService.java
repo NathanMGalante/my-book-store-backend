@@ -12,6 +12,7 @@ import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTCreationException;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 
+import jakarta.servlet.http.HttpServletRequest;
 import nathan.mg.api.user.User;
 
 @Service
@@ -43,8 +44,24 @@ public class TokenService {
 	public String generateRefreshToken(User user) {
 		return generateToken(user, LocalDateTime.now().plusMonths(1));
 	}
+
+	public String getToken(HttpServletRequest request) {
+		var authorizationHeader = request.getHeader("Authorization");
+		if(authorizationHeader != null) {
+			return authorizationHeader.replace("Bearer ", "");
+		}
+		return null;
+	}
+
+	public String getSubjec(HttpServletRequest request) {
+		var authorizationHeader = request.getHeader("Authorization");
+		if(authorizationHeader != null) {
+			return getSubjecFromToken(authorizationHeader.replace("Bearer ", ""));
+		}
+		return null;
+	}
 	
-	public String getSubjec(String token) {
+	public String getSubjecFromToken(String token) {
 		try {
 		    Algorithm algorithm = Algorithm.HMAC256(secret);
 		    return JWT.require(algorithm)

@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Email;
 import nathan.mg.api.store.StoreRequestDto;
 
-public record UserDto(
+public record UserRequestDto(
 		@NotBlank(message = "Nome obrigatório")
 		String name,
 		@NotBlank(message = "Email obrigatório")
