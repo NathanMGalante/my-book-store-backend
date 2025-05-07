@@ -1,4 +1,4 @@
-package nathan.mg.api.store.book;
+package nathan.mg.api.book;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;

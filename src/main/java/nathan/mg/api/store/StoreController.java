@@ -21,10 +21,10 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import jakarta.validation.Valid;
-import nathan.mg.api.store.book.Book;
-import nathan.mg.api.store.book.BookRepository;
-import nathan.mg.api.store.book.BookRequestDto;
-import nathan.mg.api.store.book.BookResponseDto;
+import nathan.mg.api.book.Book;
+import nathan.mg.api.book.BookRepository;
+import nathan.mg.api.book.BookRequestDto;
+import nathan.mg.api.book.BookResponseDto;
 import nathan.mg.api.user.Role;
 import nathan.mg.api.user.User;
 import nathan.mg.api.user.UserRequestDto;
@@ -101,7 +101,7 @@ public class StoreController {
 	}
 	
 	@PostMapping("/{id}/book")
-	@Secured({"ROLE_ADMIN", "ROLE_EMPLOYEER"})
+	@Secured({"ROLE_ADMIN"})
 	@Transactional
 	public ResponseEntity<BookResponseDto> registerBook(
 			@PathVariable Long id,
@@ -116,7 +116,7 @@ public class StoreController {
 	}
 
 	@GetMapping("/{id}/books")
-	@Secured({"ROLE_ADMIN"})
+	@Secured({"ROLE_ADMIN", "ROLE_EMPLOYEER"})
 	public ResponseEntity<List<BookResponseDto>> getBooks(@PathVariable Long id) {
         var store = repository.getReferenceById(id);
         var books = bookRepository.findAllByStore(store).stream().map(BookResponseDto::new).toList();
