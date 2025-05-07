@@ -1,5 +1,7 @@
 package nathan.mg.api.store;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -19,6 +21,10 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import jakarta.validation.Valid;
+import nathan.mg.api.store.book.Book;
+import nathan.mg.api.store.book.BookRepository;
+import nathan.mg.api.store.book.BookRequestDto;
+import nathan.mg.api.store.book.BookResponseDto;
 import nathan.mg.api.user.Role;
 import nathan.mg.api.user.User;
 import nathan.mg.api.user.UserRequestDto;
@@ -30,6 +36,9 @@ public class StoreController {
 
 	@Autowired
 	private StoreRepository repository;
+
+	@Autowired
+    private BookRepository bookRepository; 
 
 	@Autowired
     private UserRepository userRepository; 
@@ -55,7 +64,10 @@ public class StoreController {
 	@PutMapping("/{id}")
 	@Secured({"ROLE_ADMIN"})
 	@Transactional
-	public ResponseEntity<StoreResponseDto> updateStore(@PathVariable Long id, @RequestBody @Valid StoreRequestDto data) {
+	public ResponseEntity<StoreResponseDto> updateStore(
+			@PathVariable Long id,
+			@RequestBody @Valid StoreRequestDto data
+			) {
         var store = repository.getReferenceById(id);
         store.update(data);
         
@@ -80,10 +92,36 @@ public class StoreController {
 
 	@GetMapping
 	@Secured({"ROLE_ADMIN"})
-	public ResponseEntity<Page<StoreResponseDto>> getStores(@PageableDefault(size = 10, sort = {"name"}) Pageable pagination) {
+	public ResponseEntity<Page<StoreResponseDto>> getStores(
+			@PageableDefault(size = 10, sort = {"name"}) Pageable pagination
+			) {
         var page = repository.findAllByDeletionDateTimeNull(pagination).map(StoreResponseDto::new);
         
         return ResponseEntity.ok(page);
+	}
+	
+	@PostMapping("/{id}/book")
+	@Secured({"ROLE_ADMIN", "ROLE_EMPLOYEER"})
+	@Transactional
+	public ResponseEntity<BookResponseDto> registerBook(
+			@PathVariable Long id,
+			@RequestBody @Valid BookRequestDto data) {
+        var store = repository.getReferenceById(id);
+        
+        Book book = new Book(data, store);
+        
+        bookRepository.save(book);
+        
+        return ResponseEntity.ok(new BookResponseDto(book));
+	}
+
+	@GetMapping("/{id}/books")
+	@Secured({"ROLE_ADMIN"})
+	public ResponseEntity<List<BookResponseDto>> getBooks(@PathVariable Long id) {
+        var store = repository.getReferenceById(id);
+        var books = bookRepository.findAllByStore(store).stream().map(BookResponseDto::new).toList();
+        
+        return ResponseEntity.ok(books);
 	}
 }
 

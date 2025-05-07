@@ -48,10 +48,10 @@ public class AuthController {
 	public ResponseEntity<AuthResponseDto> refresh(@RequestBody @Valid RefreshRequestDto data) {
 		var refreshToken = data.refreshToken();
 		var subject = tokenService.getSubjecFromToken(refreshToken);
-		var user = userRepository.findByEmail(subject);
+		var user = (User) userRepository.findByEmail(subject);
 
-		var newAccessToken = tokenService.generateAccessToken((User) user);
-		var newRefreshToken = tokenService.generateRefreshToken((User) user);
+		var newAccessToken = tokenService.generateAccessToken(user);
+		var newRefreshToken = tokenService.generateRefreshToken(user);
 
 		return ResponseEntity.ok(new AuthResponseDto(newAccessToken, newRefreshToken));
 	}
