@@ -45,7 +45,7 @@ public class BookController {
 	}
 	
 	@GetMapping
-	@Secured({"ROLE_ADMIN", "ROLE_EMPLOYEER"})
+	@Secured({"ROLE_ADMIN", "ROLE_EMPLOYEE"})
 	public ResponseEntity<Page<BookResponseDto>> getBooks(
 			@PageableDefault(size = 10, sort = {"title"}) Pageable pagination
 			) {

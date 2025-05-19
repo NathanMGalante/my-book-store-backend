@@ -4,21 +4,28 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import jakarta.validation.Valid;
 import nathan.mg.api.config.security.TokenService;
 import nathan.mg.api.store.StoreResponseDto;
 import nathan.mg.api.user.User;
 import nathan.mg.api.user.UserRepository;
+import nathan.mg.api.user.UserRequestDto;
 import nathan.mg.api.user.UserResponseDto;
 
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
+	
+	@Autowired
+    private PasswordEncoder passwordEncoder;
 	
 	@Autowired
 	private AuthenticationManager manager;
@@ -28,6 +35,16 @@ public class AuthController {
 	
 	@Autowired
 	private UserRepository userRepository;
+
+	@Transactional
+	@PostMapping("/register")
+	public ResponseEntity<UserResponseDto> register(@RequestBody @Valid UserRequestDto data, UriComponentsBuilder uriBuilder) {
+        User user = new User(data.name(), data.email(), passwordEncoder.encode(data.password()));
+        userRepository.save(user);
+
+        var uri = uriBuilder.path("/users/{id}").buildAndExpand(user.getId()).toUri();
+        return ResponseEntity.created(uri).body(new UserResponseDto(user));
+	}
 
 	@PostMapping("/login")
 	public ResponseEntity<LoginResponseDto> login(@RequestBody @Valid LoginRequestDto data) {
@@ -39,7 +56,7 @@ public class AuthController {
 		var refreshToken = tokenService.generateRefreshToken(user);
 		
 		var userDto = new UserResponseDto(user);
-		var storeDto = new StoreResponseDto(user.getStore());
+		var storeDto = user.getStore() == null ? null : new StoreResponseDto(user.getStore());
 		
 		return ResponseEntity.ok(new LoginResponseDto(accessToken, refreshToken, userDto, storeDto));
 	}

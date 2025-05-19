@@ -10,6 +10,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import jakarta.persistence.*;
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -37,24 +38,30 @@ public class User implements UserDetails {
     private String photo;
 
     @ManyToOne
-    @JoinColumn(name = "store_id", nullable = false)
+    @JoinColumn(name = "store_id")
     private Store store;
 
     @Enumerated(EnumType.STRING)
-    private Role role = Role.ROLE_GUEST;
+    private Role role = Role.ROLE_USER;
 
-    public User(String name, String email, String password, String photo, Store store, Role role) {
+    public User(String name, String email, String password, Role role) {
         this.name = name;
         this.email = email;
         this.password = password;
-        this.photo = photo;
-        this.store = store;
         this.role = role;
     	this.creationDateTime = LocalDateTime.now();
     }
 
-    public User(String name, String email, String password, String photo, Store store) {
-    	this(name, email, password, photo, store, Role.ROLE_GUEST);
+    public User(String name, String email, String password) {
+    	this(name, email, password, Role.ROLE_USER);
+    }
+    
+    public void setStore(@Valid Store store) {
+    	this.store = store;
+    }
+    
+    public void setRole(Role role) {
+    	this.role = role;
     }
 
 	@Override

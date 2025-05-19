@@ -6,9 +6,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.annotation.Secured;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,52 +18,57 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import nathan.mg.api.auth.AuthService;
 import nathan.mg.api.book.Book;
 import nathan.mg.api.book.BookRepository;
 import nathan.mg.api.book.BookRequestDto;
 import nathan.mg.api.book.BookResponseDto;
 import nathan.mg.api.user.Role;
-import nathan.mg.api.user.User;
-import nathan.mg.api.user.UserRequestDto;
 import nathan.mg.api.user.UserRepository;
+import nathan.mg.api.user.UserResponseDto;
 
 @RestController
 @RequestMapping("stores")
 public class StoreController {
+	
+	@Autowired
+	private AuthService authService;
 
 	@Autowired
 	private StoreRepository repository;
 
 	@Autowired
-    private BookRepository bookRepository; 
+	private UserRepository userRepository;
 
 	@Autowired
-    private UserRepository userRepository; 
-	
-	@Autowired
-    private PasswordEncoder passwordEncoder;
+    private BookRepository bookRepository;
 
-	@PostMapping
 	@Transactional
-	public ResponseEntity<StoreResponseDto> register(@RequestBody @Valid UserRequestDto data, UriComponentsBuilder uriBuilder) {
-        Store store = new Store(data.store());
-        
-        User admin = new User(data.name(), data.email(), passwordEncoder.encode(data.password()), data.photo(), store, Role.ROLE_ADMIN);
-        
+	@PostMapping
+	@Secured({"ROLE_USER"})
+	public ResponseEntity<StoreResponseDto> register(
+			HttpServletRequest request,
+			UriComponentsBuilder uriBuilder,
+			@RequestBody @Valid StoreRequestDto data) {		
+        Store store = new Store(data);
         repository.save(store);
-        userRepository.save(admin);
-        
+
+		var admin = authService.getCurrentUser(request);
+		admin.setStore(store);
+		admin.setRole(Role.ROLE_ADMIN);
+
         var uri = uriBuilder.path("/stores/{id}").buildAndExpand(store.getId()).toUri();
-        
         return ResponseEntity.created(uri).body(new StoreResponseDto(store));
 	}
 
+	@Transactional
 	@PutMapping("/{id}")
 	@Secured({"ROLE_ADMIN"})
-	@Transactional
 	public ResponseEntity<StoreResponseDto> updateStore(
 			@PathVariable Long id,
 			@RequestBody @Valid StoreRequestDto data
@@ -74,10 +79,13 @@ public class StoreController {
         return ResponseEntity.ok(new StoreResponseDto(store));
 	}
 
+	@Transactional
 	@DeleteMapping("/{id}")
 	@Secured({"ROLE_ADMIN"})
-	@Transactional
-	public ResponseEntity<?> deleteStore(@PathVariable Long id) {
+	public ResponseEntity<?> deleteStore(HttpServletRequest request, @PathVariable Long id) {
+		var admin = authService.getCurrentUser(null);
+		admin.setRole(Role.ROLE_USER);
+		admin.setStore(null);
 		repository.getReferenceById(id).delete();
 		
 		return ResponseEntity.noContent().build();
@@ -99,12 +107,50 @@ public class StoreController {
         
         return ResponseEntity.ok(page);
 	}
-	
+
+	@Transactional
+	@PostMapping("/{id}/employee/{userId}")
+	@Secured({"ROLE_ADMIN"})
+	public ResponseEntity<UserResponseDto> registerEmployee(
+			@PathVariable Long id,
+			@PathVariable Long userId) {
+        var store = repository.getReferenceById(id);
+        
+        var employee = userRepository.getReferenceById(userId);
+        
+        employee.setStore(store);
+        employee.setRole(Role.ROLE_EMPLOYEE);
+
+        return ResponseEntity.noContent().build();
+	}
+
+	@Transactional
+	@DeleteMapping("/{id}/employee/{userId}")
+	@Secured({"ROLE_ADMIN"})
+	public ResponseEntity<?> removeEmployee(
+			@PathVariable Long id,
+			@PathVariable Long userId) {
+        var store = repository.getReferenceById(id);
+        
+        var employee = userRepository.getReferenceById(userId);
+        var employeeStore = employee.getStore();
+        
+        if(employeeStore != null && employeeStore.getId() == store.getId()) {
+	        employee.setStore(null);
+	        employee.setRole(Role.ROLE_USER);
+
+	        return ResponseEntity.noContent().build();
+        }
+
+        throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Funcionário não encontrado");
+	}
+
+	@Transactional
 	@PostMapping("/{id}/book")
 	@Secured({"ROLE_ADMIN"})
-	@Transactional
 	public ResponseEntity<BookResponseDto> registerBook(
 			@PathVariable Long id,
+			UriComponentsBuilder uriBuilder,
 			@RequestBody @Valid BookRequestDto data) {
         var store = repository.getReferenceById(id);
         
@@ -112,11 +158,12 @@ public class StoreController {
         
         bookRepository.save(book);
         
-        return ResponseEntity.ok(new BookResponseDto(book));
+        var uri = uriBuilder.path("/books/{id}").buildAndExpand(book.getId()).toUri();
+        return ResponseEntity.created(uri).body(new BookResponseDto(book));
 	}
 
 	@GetMapping("/{id}/books")
-	@Secured({"ROLE_ADMIN", "ROLE_EMPLOYEER"})
+	@Secured({"ROLE_ADMIN", "ROLE_EMPLOYEE"})
 	public ResponseEntity<List<BookResponseDto>> getBooks(@PathVariable Long id) {
         var store = repository.getReferenceById(id);
         var books = bookRepository.findAllByStore(store).stream().map(BookResponseDto::new).toList();
@@ -124,17 +171,3 @@ public class StoreController {
         return ResponseEntity.ok(books);
 	}
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-

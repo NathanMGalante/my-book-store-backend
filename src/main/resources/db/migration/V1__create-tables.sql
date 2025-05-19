@@ -15,8 +15,8 @@ CREATE TABLE IF NOT EXISTS user (
     password VARCHAR(60) NOT NULL,
     photo LONGTEXT NULL,
     role VARCHAR(20) NOT NULL DEFAULT 'GUEST',
-    store_id BIGINT NOT NULL,
+    store_id BIGINT NULL,  -- Alterado para NULL
     creation_date_time DATETIME NOT NULL,
     PRIMARY KEY(id),
-    FOREIGN KEY (store_id) REFERENCES store(id)
+    FOREIGN KEY (store_id) REFERENCES store(id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
