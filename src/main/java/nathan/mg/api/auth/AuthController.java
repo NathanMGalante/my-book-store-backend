@@ -64,6 +64,7 @@ public class AuthController {
 	@PostMapping("/refresh")
 	public ResponseEntity<AuthResponseDto> refresh(@RequestBody @Valid RefreshRequestDto data) {
 		var refreshToken = data.refreshToken();
+		
 		var subject = tokenService.getSubjecFromToken(refreshToken);
 		var user = (User) userRepository.findByEmail(subject);
 

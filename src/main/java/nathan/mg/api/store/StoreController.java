@@ -145,6 +145,16 @@ public class StoreController {
         throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Funcionário não encontrado");
 	}
 
+	@GetMapping("/{id}/employees")
+	@Secured({"ROLE_ADMIN"})
+	public ResponseEntity<List<UserResponseDto>> getEmployees(
+			@PathVariable Long id) {
+        var store = repository.getReferenceById(id);
+        var page = userRepository.findAllByStoreAndRole(store, Role.ROLE_EMPLOYEE).stream().map(UserResponseDto::new).toList();
+        
+        return ResponseEntity.ok(page);
+	}
+
 	@Transactional
 	@PostMapping("/{id}/book")
 	@Secured({"ROLE_ADMIN"})
